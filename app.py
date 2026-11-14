@@ -1,4 +1,5 @@
 import html
+import random
 from datetime import datetime
 
 import streamlit as st
@@ -55,6 +56,36 @@ SCENARIOS = {
             "if": "اكتبي ماذا ستفعلين عند عودة الاتصال...",
             "elif": "اكتبي كيف ستتعاملين مع التذبذب...",
             "else": "اكتبي خطتك عند الانقطاع التام...",
+        },
+    },
+    "alarm": {
+        "title": "التأخر في الاستيقاظ يوم الامتحان",
+        "question": "ماذا لو استيقظتِ متأخرة<br>يوم الامتحان؟",
+        "var": "alarm_status",
+        "labels": {
+            "if": "الوقت لا يزال كافياً",
+            "elif": "ستتأخرين قليلاً",
+            "else": "فاتك موعد الامتحان",
+        },
+        "placeholders": {
+            "if": "اكتبي ماذا ستفعلين لتصلي في الوقت...",
+            "elif": "اكتبي كيف ستتصرفين إذا تأخرتِ قليلاً...",
+            "else": "اكتبي خطتك إذا فاتك الموعد...",
+        },
+    },
+    "idcard": {
+        "title": "نسيان البطاقة الجامعية عند باب القاعة",
+        "question": "ماذا لو نسيتِ بطاقتك الجامعية<br>عند باب القاعة؟",
+        "var": "id_status",
+        "labels": {
+            "if": "أمكنك إحضارها بسرعة",
+            "elif": "معك إثبات هوية بديل",
+            "else": "لا يوجد أي إثبات هوية",
+        },
+        "placeholders": {
+            "if": "اكتبي ماذا ستفعلين لإحضارها...",
+            "elif": "اكتبي كيف ستستخدمين الإثبات البديل...",
+            "else": "اكتبي خطتك إذا لم يتوفر إثبات هوية...",
         },
     },
 }
@@ -161,6 +192,32 @@ div.stButton > button:hover, div.stDownloadButton > button:hover { background: #
 }
 .output-box .tag { color: #9fb3d1; font-size: 13px; display: block; margin-bottom: 4px; }
 
+/* ───── إصلاح التباين (يعمل حتى لو كان المتصفح بالوضع الداكن) ───── */
+.stApp { color: #1f242d; }
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] li { color: #1f242d; }
+div[data-testid="stTextArea"] textarea { caret-color: #1f242d; }
+div[data-testid="stTextArea"] textarea::placeholder {
+    color: #6b7385 !important; opacity: 1 !important; -webkit-text-fill-color: #6b7385 !important;
+}
+/* خيارات الحالة (Radio) */
+div[data-testid="stRadio"] label,
+div[data-testid="stRadio"] label p,
+div[data-testid="stRadio"] label div,
+div[data-testid="stRadio"] label span {
+    color: #1f242d !important; opacity: 1 !important; font-weight: 700 !important;
+}
+div[data-testid="stRadio"] label {
+    background: #ffffff; border: 2px solid #2b3446; border-radius: 12px;
+    padding: 8px 14px; margin-bottom: 6px; width: 100%;
+}
+div[data-testid="stRadio"] label:has(input:checked) { background: #e8f3fc; border-color: #5b9bd5; }
+/* مفتاح ELIF وبقية عناصر الأدوات */
+div[data-testid="stToggle"] label, div[data-testid="stToggle"] label p { color: #1f242d !important; font-weight: 700; }
+[data-testid="stExpander"] summary, [data-testid="stExpander"] summary p { color: #1f242d !important; }
+[data-testid="stExpander"] { background: #ffffff; border: 2px solid #2b3446; border-radius: 12px; }
+[data-testid="stExpander"] [data-testid="stMarkdownContainer"] p { color: #1f242d !important; }
+
 /* التذييل */
 .footer-credits {
     text-align: center; margin-top: 34px; padding-top: 14px; border-top: 2px dashed #cfc8b8;
@@ -221,13 +278,20 @@ st.markdown(
 )
 
 # ─────────────────────────── الخطوة 1: اختيار الموقف ───────────────────────────
-st.markdown('<div class="step-title"><span>1</span>اختاري الموقف</div>', unsafe_allow_html=True)
-key = st.selectbox(
-    "الموقف",
-    options=list(SCENARIOS.keys()),
-    format_func=lambda k: SCENARIOS[k]["title"],
-    label_visibility="collapsed",
-)
+st.markdown('<div class="step-title"><span>1</span>موقفك العشوائي</div>', unsafe_allow_html=True)
+
+if "scenario_key" not in st.session_state:
+    st.session_state.scenario_key = random.choice(list(SCENARIOS.keys()))
+
+
+def new_random_scenario():
+    """يسحب موقفاً عشوائياً جديداً مختلفاً عن الحالي."""
+    others = [k for k in SCENARIOS if k != st.session_state.scenario_key]
+    st.session_state.scenario_key = random.choice(others)
+    st.session_state.result = None
+
+
+key = st.session_state.scenario_key
 sc = SCENARIOS[key]
 
 use_elif = st.toggle(
@@ -247,6 +311,8 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
+
+st.button("🎲 موقف عشوائي جديد", on_click=new_random_scenario, key="reroll")
 
 # ─────────────────────────── الخطوة 2: كتابة الإجابات ───────────────────────────
 st.markdown('<div class="step-title"><span>2</span>اكتبي إجاباتك</div>', unsafe_allow_html=True)
